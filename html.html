@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لعبة الثعبان</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: sans-serif;
+      background: #f0f0f0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      flex-direction: column;
+      text-align: center;
+    }
+
+    #menu, #game-over {
+      display: none;
+      text-align: center;
+    }
+
+    #score {
+      font-size: 18px;
+      margin-bottom: 10px;
+      display: none;
+    }
+
+    #game {
+      width: 90vw;
+      height: 90vw;
+      max-width: 400px;
+      max-height: 400px;
+      border: 2px solid black;
+      position: relative;
+      background: #ffffff;
+      display: none;
+    }
+
+    .snake {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background: black;
+      color: white;
+      font-size: 8px;
+      text-align: center;
+      line-height: 10px;
+      font-weight: bold;
+      font-family: monospace;
+    }
+
+    .apple {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background: red;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 5px;
+      border: none;
+      background: black;
+      color: white;
+      cursor: pointer;
+    }
+
+    input {
+      padding: 8px;
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+    }
+
+    .player-name {
+      font-size: 20px;
+      margin-bottom: 20px;
+    }
+
+    /* التوافق مع الشاشات الصغيرة */
+    @media (max-width: 600px) {
+      #game {
+        width: 80vw;
+        height: 80vw;
+      }
+    }
+
+  </style>
+</head>
+<body>
+
+<!-- القائمة -->
+<div id="menu">
+  <h1>🎮 لعبة الثعبان</h1>
+  <div class="player-name">الصانع: أبويحيى محمد أمين</div>
+  <input type="text" id="playerName" placeholder="اكتب اسمك">
+  <br>
+  <button onclick="startGame()">ابدأ اللعبة</button>
+</div>
+
+<!-- عداد النقاط -->
+<div id="score">النقاط: 0</div>
+
+<!-- اللعبة -->
+<div id="game"></div>
+
+<!-- الخسارة -->
+<div id="game-over">
+  <h1>😢 خسرت!</h1>
+  <button onclick="location.reload()">إعادة اللعب</button>
+</div>
+
+<script>
+  const menu = document.getElementById('menu');
+  const gameOverScreen = document.getElementById('game-over');
+  const game = document.getElementById('game');
+  const scoreDisplay = document.getElementById('score');
+  const playerNameInput = document.getElementById('playerName');
+
+  let snake = [];
+  let direction = 'right';
+  let apple = null;
+  let interval = null;
+  let score = 0;
+  let playerName = "";
+  let speed = 150;
+
+  menu.style.display = 'block';
+
+  function startGame() {
+    playerName = playerNameInput.value.trim();
+    if (playerName === "") {
+      playerName = "أبويحيى محمد أمين";  // إذا لم يتم إدخال اسم، سنستخدم اسمك
+    }
+
+    menu.style.display = 'none';
+    game.style.display = 'block';
+    scoreDisplay.style.display = 'block';
+    score = 0;
+    updateScore();
+    game.innerHTML = '';
+    direction = 'right';
+    speed = 150;
+
+    // الثعبان
+    snake = [];
+    for (let i = 0; i < 5; i++) {
+      const segment = createSnakeSegment(i);
+      segment.style.left = (50 - i * 10) + 'px';
+      segment.style.top = '50px';
+      game.appendChild(segment);
+      snake.push(segment);
+    }
+
+    // التفاحة
+    spawnApple();
+
+    interval = setInterval(update, speed);
+  }
+
+  function createSnakeSegment(index) {
+    const segment = document.createElement('div');
+    segment.classList.add('snake');
+    if (index < playerName.length) {
+      segment.textContent = playerName[index];
+    } else {
+      segment.textContent = '';
+    }
+    return segment;
+  }
+
+  function spawnApple() {
+    if (apple) game.removeChild(apple);
+    apple = document.createElement('div');
+    apple.classList.add('apple');
+    apple.style.left = (Math.floor(Math.random() * 40) * 10) + 'px';
+    apple.style.top = (Math.floor(Math.random() * 40) * 10) + 'px';
+    game.appendChild(apple);
+  }
+
+  function update() {
+    for (let i = snake.length - 1; i > 0; i--) {
+      snake[i].style.left = snake[i - 1].style.left;
+      snake[i].style.top = snake[i - 1].style.top;
+    }
+
+    let head = snake[0];
+    let x = parseInt(head.style.left);
+    let y = parseInt(head.style.top);
+
+    if (direction === 'right') x += 10;
+    else if (direction === 'left') x -= 10;
+    else if (direction === 'up') y -= 10;
+    else if (direction === 'down') y += 10;
+
+    if (x < 0 || x >= 400 || y < 0 || y >= 400) {
+      endGame();
+      return;
+    }
+
+    head.style.left = x + 'px';
+    head.style.top = y + 'px';
+
+    // أكل التفاحة
+    if (head.style.left === apple.style.left && head.style.top === apple.style.top) {
+      const newSegment = createSnakeSegment(snake.length);
+      newSegment.style.left = snake[snake.length - 1].style.left;
+      newSegment.style.top = snake[snake.length - 1].style.top;
+      game.appendChild(newSegment);
+      snake.push(newSegment);
+      spawnApple();
+      score++;
+      updateScore();
+
+      // زيادة السرعة كل 5 نقاط
+      if (score % 5 === 0 && speed > 50) {
+        speed -= 10;
+        clearInterval(interval);
+        interval = setInterval(update, speed);
+      }
+    }
+  }
+
+  function updateScore() {
+    scoreDisplay.textContent = 'النقاط: ' + score;
+  }
+
+  function endGame() {
+    clearInterval(interval);
+    game.style.display = 'none';
+    scoreDisplay.style.display = 'none';
+    gameOverScreen.style.display = 'block';
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' && direction !== 'left') direction = 'right';
+    else if (e.key === 'ArrowLeft' && direction !== 'right') direction = 'left';
+    else if (e.key === 'ArrowUp' && direction !== 'down') direction = 'up';
+    else if (e.key === 'ArrowDown' && direction !== 'up') direction = 'down';
+  });
+
+  // التحكم عبر اللمس
+  document.addEventListener('touchstart', (e) => {
+    const touch = e.touches[0];
+    const x1 = touch.clientX;
+    const y1 = touch.clientY;
+
+    document.addEventListener('touchend', (e) => {
+      const touchEnd = e.changedTouches[0];
+      const x2 = touchEnd.clientX;
+      const y2 = touchEnd.clientY;
+
+      const diffX = x2 - x1;
+      const diffY = y2 - y1;
+
+      if (Math.abs(diffX) > Math.abs(diffY)) {
+        if (diffX > 0 && direction !== 'left') direction = 'right';
+        else if (diffX < 0 && direction !== 'right') direction = 'left';
+      } else {
+        if (diffY > 0 && direction !== 'up') direction = 'down';
+        else if (diffY < 0 && direction !== 'down') direction = 'up';
+      }
+    });
+  });
+
+</script>
+
+</body>
+</html>
